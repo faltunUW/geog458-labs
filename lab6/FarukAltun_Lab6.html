@@ -29,9 +29,30 @@
       color: white; background: transparent; text-align: left; font: inherit; cursor: pointer; }
     #county-options button:hover, #county-options button:focus-visible { background: #526d84; }
     :focus-visible { outline: 2px solid #ffb547; outline-offset: 2px; }
-    #county-chart svg { width: 100%; height: auto; display: block; }
-    #county-chart text { fill: #dce4ed; font-size: 11px; }
-    #county-chart .domain, #county-chart .tick line { stroke: #8595a5; }
+    .population-chart svg { width: 100%; height: auto; display: block; }
+    .population-chart text { fill: #dce4ed; font-size: 11px; }
+    .population-chart .domain, .population-chart .tick line { stroke: #8595a5; }
+    .dashboard-button { padding: 9px 14px; border: 1px solid #91a7ba; border-radius: 5px;
+      background: #33485b; color: white; font: inherit; cursor: pointer; }
+    .dashboard-button:hover { background: #526d84; }
+    .dashboard-button:disabled { opacity: 0.5; cursor: default; }
+    #comparison-dialog { width: min(960px, calc(100% - 32px)); max-height: 90vh;
+      padding: 24px; border: 1px solid #91a7ba; border-radius: 8px;
+      background: #26313d; color: #edf4fa; font: inherit; overflow-y: auto; }
+    #comparison-dialog::backdrop { background: #0009; }
+    .comparison-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .comparison-header h2 { margin: 0; }
+    .comparison-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    .comparison-card { min-width: 0; padding: 16px; border: 1px solid #526d84; border-radius: 5px; }
+    .comparison-card h3 { margin: 16px 0 8px; font-size: 18px; }
+    .comparison-card dl { margin: 0 0 12px; }
+    .comparison-card dl div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 12px; }
+    .comparison-card dt { color: #c5d0dc; }
+    .comparison-card dd { margin: 0; color: #ffb547; }
+    @media (max-width: 600px) {
+      .comparison-grid { grid-template-columns: 1fr; }
+      #comparison-dialog { padding: 16px; }
+    }
     #map-panel { position: relative; min-width: 0; height: 100vh; color: #26313d; }
     #map { position: absolute; inset: 0; }
     #legend { position: absolute; right: 12px; bottom: 40px; padding: 12px 14px;
@@ -64,23 +85,56 @@
       <div id="county-options" role="group" aria-label="County search results" hidden></div>
       <p id="search-status" role="status">The search filter will be connected in Step 3.</p>
     </div>
+    <button id="open-comparison" class="dashboard-button" type="button" disabled>Compare two counties</button>
     <div aria-live="polite">
       <h2 id="placename">Washington</h2>
       <p class="muted">Population in 2020 · <span id="selection-mode">All counties</span></p>
       <p id="county-count">Loading…</p>
     </div>
     <h2 style="font-size:17px">Population trend</h2>
-    <div id="county-chart"></div>
+    <div id="county-chart" class="population-chart"></div>
     <p id="chart-note">The linked D3 graph will be connected in Step 4.</p>
     <p id="status" role="status">Loading map and WAcounties.geojson…</p>
     <p id="indicator-note" class="muted">Map colors show total population in 2020 (people), not population density.</p>
     <p class="muted">Source: <a href="https://canvas.uw.edu/courses/1918791/files/152783058?wrap=1">instructor-provided WAcounties.geojson</a>. Growth (%) = (2020 population − 2000 population) / 2000 population × 100. The data are historical; this dashboard is not a live monitoring feed.</p>
-    <p class="muted">AI disclosure: I used ChatGPT 6.1 Sol to help add the population growth map, map selector, matching legend, and hover popup, and to test the dashboard. I chose the growth classes and approved the indicator and popup content.</p>
+    <p class="muted">AI disclosure: I used ChatGPT 6.1 Sol to help add the population growth map, map selector, matching legend, hover popup, and county comparison, and to test the dashboard. I chose the growth classes and approved the indicator and popup content.</p>
   </aside>
   <main id="map-panel" aria-label="Washington county population map">
     <div id="map"></div>
     <div id="legend"><h2>Population in 2020</h2></div>
   </main>
+  <dialog id="comparison-dialog" aria-labelledby="comparison-title" aria-describedby="comparison-note">
+    <div class="comparison-header">
+      <h2 id="comparison-title">Compare two counties</h2>
+      <button id="close-comparison" class="dashboard-button" type="button">Close</button>
+    </div>
+    <p id="comparison-note" class="muted">Select two different counties to compare population and growth from 2000 to 2020. Both charts use the same y-axis scale, in people.</p>
+    <p id="comparison-status" class="muted" role="status">Choose a county in each column.</p>
+    <div class="comparison-grid">
+      <section class="comparison-card" id="comparison-left">
+        <label for="compare-left">First county</label>
+        <select id="compare-left"><option value="">Choose a county</option></select>
+        <h3 class="comparison-name">No county selected</h3>
+        <dl hidden>
+          <div><dt>Population in 2000</dt><dd class="population-2000"></dd></div>
+          <div><dt>Population in 2020</dt><dd class="population-2020"></dd></div>
+          <div><dt>Growth, 2000–2020</dt><dd class="population-growth"></dd></div>
+        </dl>
+        <div class="comparison-chart population-chart"></div>
+      </section>
+      <section class="comparison-card" id="comparison-right">
+        <label for="compare-right">Second county</label>
+        <select id="compare-right"><option value="">Choose a county</option></select>
+        <h3 class="comparison-name">No county selected</h3>
+        <dl hidden>
+          <div><dt>Population in 2000</dt><dd class="population-2000"></dd></div>
+          <div><dt>Population in 2020</dt><dd class="population-2020"></dd></div>
+          <div><dt>Growth, 2000–2020</dt><dd class="population-growth"></dd></div>
+        </dl>
+        <div class="comparison-chart population-chart"></div>
+      </section>
+    </div>
+  </dialog>
   <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoiZmFsdHVuIiwiYSI6ImNtdXgwZDJycTAzdWYzMHEzeTAyOWJlazAifQ.zJ_jK-CGtFRupxK45AgFqQ';
     const map = new mapboxgl.Map({
@@ -245,6 +299,8 @@
         });
 
         document.addEventListener('click', function(event) {
+          if (document.getElementById('comparison-dialog').contains(event.target)
+            || document.getElementById('open-comparison').contains(event.target)) return;
           // Search controls are another way to select; their clicks must not clear a pin.
           if (document.getElementById('county-filter').contains(event.target)) return;
           document.getElementById('county-options').hidden = true;
@@ -376,6 +432,83 @@
             .text(d => d.year + ': ' + d3.format(',')(d.population));
         };
         // END STEP 4
+
+        const comparisonDialog = document.getElementById('comparison-dialog');
+        const comparisonSelects = ['left', 'right'].map(side => document.getElementById('compare-' + side));
+        const comparisonCharts = ['left', 'right'].map(function(side) {
+          const card = document.getElementById('comparison-' + side);
+          const comparisonSvg = d3.select(card).select('.comparison-chart').append('svg')
+            .attr('viewBox', '0 0 440 280').attr('role', 'img').style('display', 'none');
+          const title = comparisonSvg.append('title');
+          const plot = comparisonSvg.append('g')
+            .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+          plot.append('g').attr('transform', 'translate(0,' + height + ')')
+            .call(d3.axisBottom(x).tickValues([2000, 2005, 2010, 2015, 2020]).tickFormat(d3.format('d')));
+          return {
+            card: card, svg: comparisonSvg, title: title, yAxis: plot.append('g'),
+            path: plot.append('path').attr('fill', 'none').attr('stroke', '#ffb547').attr('stroke-width', 3),
+            dots: plot.append('g')
+          };
+        });
+        comparisonSelects.forEach(function(select) {
+          sortedCounties.forEach(function(feature) {
+            const option = document.createElement('option');
+            option.value = feature.properties.OBJECTID;
+            option.textContent = feature.properties.NAMELSAD10;
+            select.append(option);
+          });
+          select.addEventListener('change', updateComparison);
+        });
+
+        function updateComparison() {
+          const chosen = comparisonSelects.map(select => counties.find(feature =>
+            String(feature.properties.OBJECTID) === select.value) || null);
+          const series = chosen.map(feature => feature ? years.map(year => ({
+            year: year, population: +feature.properties['POP' + year]
+          })) : []);
+          const maximum = d3.max(series.flat(), point => point.population) || 1;
+          const comparisonY = d3.scaleLinear().domain([0, maximum * 1.08]).nice().range([height, 0]);
+          const comparisonLine = d3.line().x(point => x(point.year)).y(point => comparisonY(point.population));
+          comparisonCharts.forEach(function(view, index) {
+            const feature = chosen[index];
+            const otherValue = comparisonSelects[1 - index].value;
+            Array.from(comparisonSelects[index].options).forEach(function(option) {
+              option.disabled = Boolean(option.value && option.value === otherValue);
+            });
+            view.card.querySelector('.comparison-name').textContent = feature
+              ? feature.properties.NAMELSAD10 : 'No county selected';
+            view.card.querySelector('dl').hidden = !feature;
+            view.svg.style('display', feature ? 'block' : 'none');
+            if (!feature) return;
+            const p = feature.properties;
+            view.card.querySelector('.population-2000').textContent = d3.format(',')(p.POP2000);
+            view.card.querySelector('.population-2020').textContent = d3.format(',')(p.POP2020);
+            view.card.querySelector('.population-growth').textContent = d3.format('.1f')(p.GROWTH2000_2020) + '%';
+            view.title.text(p.NAMELSAD10 + ' annual population, 2000–2020, in people');
+            view.svg.attr('aria-label', p.NAMELSAD10 + ' population trend from 2000 to 2020');
+            view.yAxis.call(d3.axisLeft(comparisonY).ticks(5).tickFormat(d3.format('~s')));
+            view.path.datum(series[index]).attr('d', comparisonLine);
+            view.dots.selectAll('circle').data(series[index], point => point.year).join('circle')
+              .attr('r', 3).attr('fill', '#ffb547')
+              .attr('cx', point => x(point.year)).attr('cy', point => comparisonY(point.population))
+              .selectAll('title').data(point => [point]).join('title')
+              .text(point => point.year + ': ' + d3.format(',')(point.population));
+          });
+          document.getElementById('comparison-status').textContent = chosen.every(Boolean)
+            ? chosen[0].properties.NAMELSAD10 + ' and ' + chosen[1].properties.NAMELSAD10 + ': population in people; growth in percent.'
+            : 'Choose a county in each column.';
+        }
+
+        updateComparison();
+        const openComparison = document.getElementById('open-comparison');
+        openComparison.disabled = false;
+        openComparison.addEventListener('click', function() {
+          popup.remove();
+          comparisonDialog.showModal();
+        });
+        document.getElementById('close-comparison').addEventListener('click', function() {
+          comparisonDialog.close();
+        });
 
         updateDashboard();
         document.getElementById('status').textContent = counties.length + ' counties loaded.';
